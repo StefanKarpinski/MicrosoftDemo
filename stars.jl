@@ -1,8 +1,9 @@
-using JuliaDB, GeometryTypes, IndexedTables, Colors, GLVisualize
-dir(paths...) = joinpath(dirname(@__FILE__), paths...)
+using GeometryTypes, DataFrames, Colors, GLVisualize
 
-stars = loadfiles([dir("stars.csv")], indexcols = []);
-gstars = gather(stars)
+# wget http://www.astronexus.com/files/downloads/hygdata_v3.csv.gz
+# mv hygdata_v3.csv.gz stars.csv.gz
+# gunzip stars.csv.gz
+stars = readtable("stars.csv");
 
 """
 bv color index to color
@@ -41,26 +42,21 @@ function bv2rgb(bv)
     return RGB{Float32}(r, g, b)
 end
 
-positions = map(x-> Point3f0(x.x, x.y, x.z), gstars).data
-colors = map(x-> RGBA{Float32}(bv2rgb(get(x.ci, 0.0)), 0.4f0), gstars).data
-glow_colors = map(gstars) do x
-    # shift them a bit in brightness and make it more transparent.
-    hsv = HSV(bv2rgb(get(x.ci, 0.0)))
-    hsv = HSV(hsv.h, hsv.s, clamp(hsv.v + 0.2, 0, 1))
-    RGBA{Float32}(RGBA(hsv, 0.3))
-end.data
+positions = map(Point3f0, zip(stars[:x], stars[:y], stars[:z]))
 
-scales = map(gstars) do nt
-    Vec2f0(nt.mag + 27) ./ 10000f0
-end.data
+colors = RGBA{Float32}.(map(x-> RGBA{Float32}(bv2rgb(ifelse(isa(x, NAtype), 0.2f0, x)), 0.3f0), stars[:ci]).data)
+
+scales = Vec2f0.(map(stars[:absmag]) do mag
+    Vec2f0(mag) ./ 13f0
+end.data)
+
 positions2 = positions ./ 100f0
 w = glscreen(color = RGBA(0f0, 0f0, 0f0, 0f0))
 _view(visualize(
     (Circle, positions2),
     color = colors,
-    glow_color = glow_colors,
-    glow_width = 0.001f0,
     scale = scales
 ), camera = :perspective)
+scales
 GLAbstraction.center!(w)
 @async renderloop(w)
