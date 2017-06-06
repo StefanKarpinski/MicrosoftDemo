@@ -43,20 +43,17 @@ function bv2rgb(bv)
 end
 
 positions = map(Point3f0, zip(stars[:x], stars[:y], stars[:z]))
-
+positions2 = positions ./ 100f0
+scales = Vec2f0.(map(mag -> Vec2f0(mag)./13f0, stars[:absmag]).data)
 colors = RGBA{Float32}.(map(x-> RGBA{Float32}(bv2rgb(ifelse(isa(x, NAtype), 0.2f0, x)), 0.3f0), stars[:ci]).data)
 
-scales = Vec2f0.(map(stars[:absmag]) do mag
-    Vec2f0(mag) ./ 13f0
-end.data)
+window = glscreen(color = RGBA(0f0, 0f0, 0f0, 0f0))
 
-positions2 = positions ./ 100f0
-w = glscreen(color = RGBA(0f0, 0f0, 0f0, 0f0))
 _view(visualize(
     (Circle, positions2),
     color = colors,
     scale = scales
 ), camera = :perspective)
-scales
-GLAbstraction.center!(w)
-@async renderloop(w)
+
+GLAbstraction.center!(window)
+@async renderloop(window)
