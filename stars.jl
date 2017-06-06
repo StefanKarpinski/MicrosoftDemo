@@ -1,4 +1,4 @@
-using GeometryTypes, DataFrames, Colors, GLVisualize
+using GeometryTypes, DataFrames, Colors, GLVisualize, Reactive, GLAbstraction
 
 # wget http://www.astronexus.com/files/downloads/hygdata_v3.csv.gz
 # mv hygdata_v3.csv.gz stars.csv.gz
@@ -43,17 +43,66 @@ function bv2rgb(bv)
 end
 
 positions = map(Point3f0, zip(stars[:x], stars[:y], stars[:z]))
-positions2 = positions ./ 100f0
-scales = Vec2f0.(map(mag -> Vec2f0(mag)./13f0, stars[:absmag]).data)
+
 colors = RGBA{Float32}.(map(x-> RGBA{Float32}(bv2rgb(ifelse(isa(x, NAtype), 0.2f0, x)), 0.3f0), stars[:ci]).data)
 
+scales = Vec2f0.(map(stars[:absmag]) do mag
+    Vec2f0(mag) ./ 13f0
+end.data)
+
+positions2 = positions ./ 100f0
 window = glscreen(color = RGBA(0f0, 0f0, 0f0, 0f0))
 
+boundingbox = AABB(positions2)
+o = origin(boundingbox)
+w = widths(boundingbox)
+wnormed = normalize(w)
+middle = o + 0.5f0 * w
+N = 1000
+len = norm(middle - o)
+acc = o
+camera_path = map(1:N) do i
+    global acc
+    acc = acc .+ (wnormed * (len / N))
+    acc
+end
+# create an camera eyeposition signal, which follows the path
+timesignal = Signal(1)
+eyeposition = map(timesignal) do index
+    len = length(camera_path)
+    Vec3f0(camera_path[index])
+end
+# create the camera lookat and up vector
+lookatposition = Signal(middle)
+upvector = Signal(Vec3f0(0,0,1))
+println(lookatposition)
+println(eyeposition)
+# create a camera from these
+cam = PerspectiveCamera(window.area, eyeposition, lookatposition, upvector)
+
+push!(cam.farclip, 10000f0)
 _view(visualize(
     (Circle, positions2),
     color = colors,
     scale = scales
-), camera = :perspective)
+), window, camera = cam)
 
-GLAbstraction.center!(window)
-@async renderloop(window)
+# don't use renderloop
+#@async renderloop(window)
+
+# create a stream to which we can add frames
+io, buffer = GLVisualize.create_video_stream("stars.mkv", window)
+for i = 1:N
+    # do something
+    # if you call @async renderloop(window) you can replace this part with yield
+    GLWindow.render_frame(window)
+    GLWindow.swapbuffers(window)
+    GLWindow.poll_glfw()
+    GLWindow.poll_reactive()
+    push!(timesignal, mod1(value(timesignal) + 1, N))
+    yield()
+    #add the frame from the current window
+    GLVisualize.add_frame!(io, window, buffer)
+end
+close(io)
+GLWindow.destroy!(window)
