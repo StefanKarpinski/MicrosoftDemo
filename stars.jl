@@ -4,6 +4,7 @@ using GeometryTypes, DataFrames, Colors, GLVisualize, Reactive, GLAbstraction
 # mv hygdata_v3.csv.gz stars.csv.gz
 # gunzip stars.csv.gz
 stars = readtable("stars.csv");
+sort!(stars, cols = :absmag, rev = true)
 
 function bv2rgb(bv)
     bv < -0.4 && (bv = -0.4)
@@ -56,7 +57,7 @@ v .*= median(map(sign, v), 1)
 up = normalize(Vec3f0(v[:,3]))
 # generate camera path with N steps
 N = 1000
-r = [5 + 15*cos(2π*(i/2N))^2 for i = 0:N-1]
+r = [5 + 15*real(Complex(cos(4π*(i/2N)))^1.5) for i = 0:N-1]
 ϕ = [10*sin(3π*(i/N)) for i = 0:N-1]
 θ = [8π*(i/N) for i = 0:N-1]
 camera_path = map(r, ϕ, θ) do r, ϕ, θ
