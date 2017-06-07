@@ -52,15 +52,16 @@ xyz = convert(Matrix, stars[[:x, :y, :z]])
 u, s, v = svd(xyz)
 u .*= median(map(sign, v), 1)
 v .*= median(map(sign, v), 1)
-us = u*diagm(s)
 # up: flattest direction
 up = normalize(Vec3f0(v[:,3]))
-# start 25 "units" in broadest direction
-start_pos = Vec3f0(25*v[:,1])
-end_pos = Vec3f0(-10*v[:,1]-5*v[:,2])
 # generate camera path with N steps
-N = 250
-camera_path = [cbrt((N-i)/N)*start_pos + cbrt(i/N)*end_pos for i = 0:N-1]
+N = 1000
+r = [5 + 15*cos((i/100)^2)/(i+1) for i = 0:N-1]
+ϕ = [10*sin(10i/N) for i = 0:N-1]
+θ = [8π * (i/N) for i = 0:N-1]
+camera_path = map(r, ϕ, θ) do r, ϕ, θ
+    Vec3f0(r*(cos(θ)*v[:,2] + sin(θ)*v[:,1]) + ϕ*v[:,3])
+end
 
 # create an camera eyeposition signal, which follows the path
 timesignal = Signal(1)
@@ -69,7 +70,7 @@ eyeposition = map(timesignal) do index
     Vec3f0(camera_path[index])
 end
 # create the camera lookat and up vector
-lookatposition = Signal(end_pos/3) # map(i->(i/N)*end_pos, timesignal)
+lookatposition = Signal(camera_path[end]/3) # map(i->(i/N)*end_pos, timesignal)
 upvector = Signal(up)
 println(lookatposition)
 println(eyeposition)
