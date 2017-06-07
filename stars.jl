@@ -5,9 +5,6 @@ using GeometryTypes, DataFrames, Colors, GLVisualize, Reactive, GLAbstraction
 # gunzip stars.csv.gz
 stars = readtable("stars.csv");
 
-"""
-bv color index to color
-"""
 function bv2rgb(bv)
     bv < -0.4 && (bv = -0.4)
     bv > 2.0 && (bv = 2.0)
@@ -46,9 +43,7 @@ positions = map(Point3f0, zip(stars[:x], stars[:y], stars[:z]))
 
 colors = RGBA{Float32}.(map(x-> RGBA{Float32}(bv2rgb(ifelse(isa(x, NAtype), 0.2f0, x)), 0.3f0), stars[:ci]).data)
 
-scales = Vec2f0.(map(stars[:absmag]) do mag
-    Vec2f0(mag) ./ 13f0
-end.data)
+scales = Vec2f0.(map(mag->Vec2f0(mag)./13f0, stars[:absmag].data))
 
 positions2 = positions ./ 100f0
 window = glscreen(color = RGBA(0f0, 0f0, 0f0, 0f0))
