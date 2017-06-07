@@ -57,10 +57,10 @@ us = u*diagm(s)
 up = normalize(Vec3f0(v[:,3]))
 # start 25 "units" in broadest direction
 start_pos = Vec3f0(25*v[:,1])
-end_pos = Vec3f0(-5*v[:,1] - 5*v[:,2])
+end_pos = Vec3f0(-10*v[:,1]-5*v[:,2])
 # generate camera path with N steps
-N = 100
-camera_path = [((N-i)/N)*start_pos + (i/N)*end_pos for i = 0:N-1]
+N = 1000
+camera_path = [cbrt((N-i)/N)*start_pos + cbrt(i/N)*end_pos for i = 0:N-1]
 
 # create an camera eyeposition signal, which follows the path
 timesignal = Signal(1)
@@ -69,7 +69,7 @@ eyeposition = map(timesignal) do index
     Vec3f0(camera_path[index])
 end
 # create the camera lookat and up vector
-lookatposition = Signal(end_pos)
+lookatposition = Signal(end_pos/3) # map(i->(i/N)*end_pos, timesignal)
 upvector = Signal(up)
 println(lookatposition)
 println(eyeposition)
