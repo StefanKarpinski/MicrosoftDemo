@@ -48,19 +48,20 @@ scales = Vec2f0.(map(mag->Vec2f0(mag)./13f0, stars[:absmag].data))
 positions2 = positions ./ 100f0
 window = glscreen(color = RGBA(0f0, 0f0, 0f0, 0f0))
 
-boundingbox = AABB(positions2)
-o = origin(boundingbox)
-w = widths(boundingbox)
-wnormed = normalize(w)
-middle = o + 0.5f0 * w
-N = 1000
-len = norm(middle - o)
-acc = o
-camera_path = map(1:N) do i
-    global acc
-    acc = acc .+ (wnormed * (len / N))
-    acc
-end
+xyz = convert(Matrix, stars[[:x, :y, :z]])
+u, s, v = svd(xyz)
+u .*= median(map(sign, v), 1)
+v .*= median(map(sign, v), 1)
+us = u*diagm(s)
+# up: flattest direction
+up = normalize(Vec3f0(v[:,3]))
+# start 25 "units" in broadest direction
+start_pos = Vec3f0(25*v[:,1])
+end_pos = Vec3f0(-5*v[:,1] - 5*v[:,2])
+# generate camera path with N steps
+N = 100
+camera_path = [((N-i)/N)*start_pos + (i/N)*end_pos for i = 0:N-1]
+
 # create an camera eyeposition signal, which follows the path
 timesignal = Signal(1)
 eyeposition = map(timesignal) do index
@@ -68,8 +69,8 @@ eyeposition = map(timesignal) do index
     Vec3f0(camera_path[index])
 end
 # create the camera lookat and up vector
-lookatposition = Signal(middle)
-upvector = Signal(Vec3f0(0,0,1))
+lookatposition = Signal(end_pos)
+upvector = Signal(up)
 println(lookatposition)
 println(eyeposition)
 # create a camera from these
