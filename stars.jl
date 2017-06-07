@@ -56,9 +56,9 @@ v .*= median(map(sign, v), 1)
 up = normalize(Vec3f0(v[:,3]))
 # generate camera path with N steps
 N = 1000
-r = [5 + 15*cos((i/100)^2)/(i+1) for i = 0:N-1]
-ϕ = [10*sin(10i/N) for i = 0:N-1]
-θ = [8π * (i/N) for i = 0:N-1]
+r = [5 + 15*cos(2π*(i/2N))^2 for i = 0:N-1]
+ϕ = [10*sin(3π*(i/N)) for i = 0:N-1]
+θ = [8π*(i/N) for i = 0:N-1]
 camera_path = map(r, ϕ, θ) do r, ϕ, θ
     Vec3f0(r*(cos(θ)*v[:,2] + sin(θ)*v[:,1]) + ϕ*v[:,3])
 end
@@ -70,7 +70,7 @@ eyeposition = map(timesignal) do index
     Vec3f0(camera_path[index])
 end
 # create the camera lookat and up vector
-lookatposition = Signal(camera_path[end]/3) # map(i->(i/N)*end_pos, timesignal)
+lookatposition = Signal(Vec3f0(3*v[:,1]))
 upvector = Signal(up)
 println(lookatposition)
 println(eyeposition)
