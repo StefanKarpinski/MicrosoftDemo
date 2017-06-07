@@ -59,7 +59,7 @@ up = normalize(Vec3f0(v[:,3]))
 start_pos = Vec3f0(25*v[:,1])
 end_pos = Vec3f0(-10*v[:,1]-5*v[:,2])
 # generate camera path with N steps
-N = 1000
+N = 250
 camera_path = [cbrt((N-i)/N)*start_pos + cbrt(i/N)*end_pos for i = 0:N-1]
 
 # create an camera eyeposition signal, which follows the path
@@ -95,7 +95,7 @@ for i = 1:N
     GLWindow.swapbuffers(window)
     GLWindow.poll_glfw()
     GLWindow.poll_reactive()
-    push!(timesignal, mod1(value(timesignal) + 1, N))
+    push!(timesignal, mod1(value(timesignal)+1, N))
     yield()
     #add the frame from the current window
     GLVisualize.add_frame!(io, window, buffer)
